@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIGITAL ANXIETY</title>
+  <style>
+    /* === ПОЛНЫЙ CSS (все стили) === */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: 'Inter', Arial, sans-serif;
+      overflow: hidden;
+      cursor: none;
+      transition: background-color 2s;
+    }
+
+    /* --- Динамический фон --- */
+    .bg-layer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+    #bgNoise {
+      opacity: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
+      transition: opacity 3s;
+    }
+    #bgGradient {
+      opacity: 0;
+      transition: opacity 3s, background 3s;
+      background: radial-gradient(ellipse at 20% 50%, rgba(255,0,50,0.06) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(100,0,255,0.05) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 90%, rgba(255,100,0,0.04) 0%, transparent 50%);
+    }
+    #bgGrid {
+      opacity: 0;
+      background-image:
+        linear-gradient(rgba(255,51,102,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,51,102,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      transition: opacity 3s;
+      animation: gridDrift 20s linear infinite;
+    }
+    @keyframes gridDrift {
+      from { transform: translate(0, 0); }
+      to   { transform: translate(60px, 60px); }
+    }
+    #bgVignette {
+      background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+      opacity: 0;
+      transition: opacity 3s;
+    }
+    #bgScanlines {
+      opacity: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0,0,0,0.15) 3px,
+        rgba(0,0,0,0.15) 6px
+      );
+      transition: opacity 3s;
+      animation: scanlineCrawl 0.3s linear infinite;
+    }
+    @keyframes scanlineCrawl {
+      from { transform: translateY(0); }
+      to   { transform: translateY(6px); }
+    }
+
+    /* --- Кастомный курсор --- */
+    .cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #ff3366;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 99999;
+      transition: transform 0.1s;
+      mix-blend-mode: difference;
+    }
+    .cursor::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 4px;
+      height: 4px;
+      background: #ff3366;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* --- Скроллящаяся лента --- */
+    #feed {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 20px;
+      will-change: transform;
+    }
+
+    .card {
+      background: #151515;
+      border: 1px solid #222;
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+    .card:hover { border-color: #ff3366; }
+    .card.card-tilted-left  { transform: rotate(-1.5deg) translateX(-30px); }
+    .card.card-tilted-right { transform: rotate(1.8deg) translateX(40px); }
+    .card.card-wide   { max-width: 90%; }
+    .card.card-narrow { max-width: 380px; }
+    .card.card-big    { transform: scale(1.08); z-index: 10; }
+    .card.card-tiny   { transform: scale(0.85); opacity: 0.7; }
+    .card.card-urgent {
+      border-color: #ff0000;
+      box-shadow: 0 0 30px rgba(255, 0, 0, 0.2);
+      animation: cardUrgentPulse 1s ease-in-out infinite;
+    }
+    .card.card-shifted-far { margin-left: 5%; margin-right: auto; max-width: 600px; }
+    .card.card-shifted-right { margin-left: auto; margin-right: 5%; max-width: 550px; }
+    .card.card-overlap { margin-bottom: -40px; z-index: 5; }
+
+    @keyframes cardUrgentPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.15); }
+      50% { box-shadow: 0 0 50px rgba(255, 0, 0, 0.4); }
+    }
+
+    @keyframes screenShake {
+      0% { transform: translate(0,0); } 10% { transform: translate(-3px,2px); } 20% { transform: translate(4px,-2px); }
+      30% { transform: translate(-2px,4px); } 40% { transform: translate(3px,-3px); } 50% { transform: translate(-4px,1px); }
+      60% { transform: translate(2px,-4px); } 70% { transform: translate(-1px,3px); } 80% { transform: translate(4px,2px); }
+      90% { transform: translate(-3px,-1px); } 100% { transform: translate(0,0); }
+    }
+    body.shaking { animation: screenShake 0.4s ease-in-out; }
+
+    .card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .avatar { width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0; }
+    .card-user { font-weight: 700; font-size: 15px; color: #fff; }
+    .card-time { font-size: 12px; color: #666; }
+    .card-text { font-size: 16px; line-height: 1.55; color: #ccc; }
+    .card-actions { display: flex; gap: 20px; margin-top: 16px; font-size: 13px; color: #555; }
+    .card-actions span { cursor: pointer; transition: color 0.2s; }
+    .card-actions span:hover { color: #ff3366; }
+
+    .card-image { width: 100%; border-radius: 12px; margin-bottom: 14px; overflow: hidden; position: relative; background: #1a1a1a; min-height: 180px; }
+    .card-image img { width: 100%; height: auto; display: block; object-fit: cover; max-height: 400px; min-height: 180px; filter: saturate(0.8); transition: filter 0.5s, transform 0.5s; }
+    .card:hover .card-image img { filter: saturate(1.3) contrast(1.1); transform: scale(1.02); }
+    .card-image.img-glitch img { animation: imgGlitch 3s ease-in-out infinite; }
+    .card-image.img-invert img { filter: invert(1) hue-rotate(180deg) saturate(0.6); }
+    .card-image.img-redshift img { filter: sepia(0.8) saturate(3) hue-rotate(-30deg) brightness(0.8); }
+    .card-image.img-ghost img { opacity: 0.4; filter: blur(1px) grayscale(0.8); }
+    @keyframes imgGlitch {
+      0%,90%,100% { transform: none; filter: saturate(0.8); }
+      92% { transform: translate(-3px,1px) skewX(1deg); filter: saturate(2) hue-rotate(90deg); }
+      94% { transform: translate(2px,-1px) skewX(-0.5deg); filter: saturate(0.3); }
+      96% { transform: translate(-1px,2px); filter: saturate(1.5) hue-rotate(-60deg); }
+    }
+
+    /* --- Уведомления --- */
+    #notifications { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; pointer-events: none; overflow: hidden; }
+    .notif {
+      position: absolute; background: #1c1c1c; border: 1px solid #333; border-left: 4px solid #ff3366; border-radius: 12px; padding: 14px 20px;
+      min-width: 280px; max-width: 360px; box-shadow: 0 8px 32px rgba(255,51,102,0.25);
+      animation: notifPop 0.3s ease-out, notifOut 0.5s ease-in 2.5s forwards; pointer-events: all; cursor: none;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .notif:hover { box-shadow: 0 0 40px rgba(255,215,0,0.4); border-color: #ffd700; z-index: 10; }
+    .notif.notif-positive {
+      border-left: 4px solid #00ff88; background: #001a0d; box-shadow: 0 8px 32px rgba(0,255,100,0.2);
+      animation: notifPop 0.3s ease-out, notifPenaltyPulse 0.6s ease-in-out 0.3s 3, notifOut 0.5s ease-in 2.5s forwards;
+    }
+    .notif.notif-positive .notif-title { color: #00ff88; }
+    .notif.notif-positive .notif-body { color: #66cc88; }
+    .notif.notif-positive:hover { box-shadow: 0 0 40px rgba(0,255,100,0.5); border-color: #00ff88; }
+    .notif.notif-positive.caught { animation: notifPenaltyCatch 0.5s ease-out forwards !important; background: #001a00; border-color: #00ff88; }
+    .notif.notif-negative {
+      border-left: 4px solid #ff2222; background: #1a0000; box-shadow: 0 8px 32px rgba(255,0,0,0.25);
+      animation: notifPop 0.3s ease-out, notifNegPulse 0.6s ease-in-out 0.3s 3, notifOut 0.5s ease-in 2.5s forwards;
+    }
+    .notif.notif-negative .notif-title { color: #ff4444; }
+    .notif.notif-negative .notif-body { color: #cc6666; }
+    .notif.notif-negative:hover { box-shadow: 0 0 40px rgba(255,0,0,0.5); border-color: #ff2222; }
+    .notif.notif-negative.caught { animation: notifPenaltyCatch 0.5s ease-out forwards !important; background: #1a0000; border-color: #ff0000; }
+    @keyframes notifNegPulse {
+      0%,100% { box-shadow: 0 8px 32px rgba(255,0,0,0.2); }
+      50% { box-shadow: 0 8px 50px rgba(255,0,0,0.5); }
+    }
+    @keyframes notifPenaltyPulse {
+      0%,100% { box-shadow: 0 8px 32px rgba(0,255,100,0.2); }
+      50% { box-shadow: 0 8px 50px rgba(0,255,100,0.5); }
+    }
+    @keyframes notifPenaltyCatch {
+      0% { transform: scale(1); opacity: 1; }
+      20% { transform: scale(1.2); opacity: 1; filter: hue-rotate(180deg); }
+      100% { transform: scale(0) rotate(-30deg); opacity: 0; filter: hue-rotate(360deg); }
+    }
+    .notif.caught { animation: notifCatch 0.4s ease-out forwards !important; border-color: #ffd700; background: #1a1500; }
+    @keyframes notifCatch {
+      0% { transform: scale(1); opacity: 1; }
+      30% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0) rotate(20deg); opacity: 0; }
+    }
+
+    .credit-popup {
+      position: fixed; font-size: 22px; font-weight: 900; color: #33ff66; pointer-events: none; z-index: 10000;
+      text-shadow: 0 0 12px rgba(50,255,100,0.6); animation: creditFloat 1.2s ease-out forwards;
+    }
+    .credit-popup.penalty { color: #ff2222; text-shadow: 0 0 12px rgba(255,0,0,0.6); }
+    @keyframes creditFloat {
+      from { transform: translateY(0) scale(1); opacity: 1; }
+      to { transform: translateY(-80px) scale(1.5); opacity: 0; }
+    }
+
+    .credit-counter {
+      font-family: monospace; font-size: 13px; color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.3); text-align: center; pointer-events: none;
+    }
+    .credit-counter .credit-value { font-size: 20px; font-weight: 900; display: block; transition: transform 0.2s; }
+    .credit-counter .credit-value.bump { transform: scale(1.3); }
+
+    .notif.notif-urgent {
+      border-left-color: #ff0000; background: #1c0000; box-shadow: 0 8px 40px rgba(255,0,0,0.3);
+      animation: notifPop 0.3s ease-out, notifShake 0.4s ease 0.3s, notifOut 0.5s ease-in 2.5s forwards;
+    }
+    .notif.notif-left { animation: notifFromLeft 0.4s ease-out, notifOut 0.5s ease-in 2.5s forwards; }
+    .notif.notif-top { animation: notifFromTop 0.4s ease-out, notifOut 0.5s ease-in 2.5s forwards; }
+    .notif-title { font-weight: 700; font-size: 13px; color: #ff3366; margin-bottom: 4px; }
+    .notif-urgent .notif-title { color: #ff0000; }
+    .notif-body { font-size: 13px; color: #aaa; }
+
+    @keyframes notifPop {
+      from { transform: scale(0.3) translateX(80px); opacity: 0; }
+      to { transform: scale(1) translateX(0); opacity: 1; }
+    }
+    @keyframes notifFromLeft {
+      from { transform: translateX(-120%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes notifFromTop {
+      from { transform: translateY(-120%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes notifShake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    @keyframes notifOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(120%); opacity: 0; }
+    }
+
+    .scream {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      z-index: 99990; pointer-events: none; background: rgba(0,0,0,0.85);
+      animation: screamIn 0.15s ease-out, screamOut 0.4s ease-in 1.2s forwards;
+    }
+    .scream-text {
+      font-size: 80px; font-weight: 900; color: #ff0033; text-transform: uppercase; letter-spacing: 12px;
+      text-shadow: 0 0 60px rgba(255,0,51,0.8), 0 0 120px rgba(255,0,51,0.4);
+      animation: screamPulse 0.2s ease-in-out infinite alternate;
+    }
+    @keyframes screamIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes screamOut { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes screamPulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+
+    .reload-message {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      z-index: 99999; background: rgba(0,0,0,0.95); pointer-events: none; animation: messageIn 0.3s ease-out;
+    }
+    .reload-message-text {
+      font-size: 90px; font-weight: 900; color: #ffd700; text-transform: uppercase; letter-spacing: 15px;
+      text-shadow: 0 0 80px rgba(255,215,0,0.8); animation: messagePulse 1s ease-in-out infinite alternate;
+    }
+    @keyframes messageIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes messagePulse {
+      from { transform: scale(1); text-shadow: 0 0 60px gold; }
+      to { transform: scale(1.05); text-shadow: 0 0 100px gold; }
+    }
+
+    .distractor {
+      position: fixed; font-size: 14px; font-weight: 700; color: #ff3366; pointer-events: none; z-index: 500;
+      animation: distractorPulse 0.8s ease-in-out infinite alternate; text-transform: uppercase; letter-spacing: 2px; opacity: 0.7;
+    }
+    @keyframes distractorPulse {
+      from { opacity: 0.3; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1.05); }
+    }
+
+    .float-counter {
+      position: fixed; font-size: 48px; font-weight: 900; color: rgba(255,51,102,0.08); pointer-events: none; z-index: 100;
+      animation: floatUp 6s linear forwards;
+    }
+    @keyframes floatUp {
+      from { transform: translateY(0) scale(1); opacity: 0.15; }
+      to { transform: translateY(-400px) scale(2); opacity: 0; }
+    }
+
+    .glitch-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9000; opacity: 0;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,51,102,0.03) 2px, rgba(255,51,102,0.03) 4px);
+    }
+    .glitch-overlay.active { animation: glitchFlash 0.15s steps(2) 3; }
+    @keyframes glitchFlash {
+      0% { opacity: 1; transform: translate(-2px,1px); }
+      50% { opacity: 0.8; transform: translate(2px,-1px); }
+      100% { opacity: 1; transform: translate(0,0); }
+    }
+
+    .top-bar {
+      position: fixed; top: 0; left: 0; width: 100%; height: 56px; background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(20px); border-bottom: 1px solid #1a1a1a; z-index: 8000;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    }
+    .top-bar-left { display: flex; align-items: center; gap: 20px; }
+    .top-bar-logo { font-weight: 900; font-size: 18px; color: #ff3366; letter-spacing: 3px; }
+    .currency-rates {
+      font-family: monospace; font-size: 11px; color: #aaa; background: #1a1a1a; padding: 4px 8px; border-radius: 12px;
+      border: 1px solid #333;
+    }
+    .top-bar-center { display: flex; align-items: center; gap: 15px; }
+    .weather-widget {
+      font-family: monospace; font-size: 11px; color: #ccc; background: #1a1a1a; padding: 4px 10px; border-radius: 12px;
+      border: 1px solid #333; display: flex; align-items: center; gap: 5px;
+    }
+    .good-news {
+      font-family: monospace; font-size: 10px; color: #88dd88; background: rgba(20,40,20,0.7); backdrop-filter: blur(5px);
+      padding: 6px 12px; border-radius: 20px; border: 1px solid #33aa33; pointer-events: none; max-width: 220px; text-align: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .top-bar-icons { display: flex; gap: 16px; }
+    .top-bar-icon { position: relative; width: 24px; height: 24px; background: #333; border-radius: 50%; animation: iconPulse 2s ease-in-out infinite; }
+    .top-bar-icon .badge {
+      position: absolute; top: -4px; right: -4px; background: #ff3366; color: #fff; font-size: 10px; font-weight: 700;
+      width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    }
+    @keyframes iconPulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    .side-ticker {
+      position: fixed; left: 0; top: 56px; width: 50px; height: calc(100vh - 56px); background: rgba(15,15,15,0.6);
+      z-index: 7000; overflow: hidden; border-right: 1px solid #1a1a1a; display: flex; flex-direction: column;
+      align-items: center; padding-top: 12px; gap: 14px;
+    }
+    .ticker-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #ff3366; opacity: 0.3;
+      animation: tickerBlink 1.5s ease-in-out infinite;
+    }
+    .ticker-dot:nth-child(odd) { animation-delay: 0.5s; }
+    @keyframes tickerBlink {
+      0%,100% { opacity: 0.15; }
+      50% { opacity: 0.9; }
+    }
+
+    .reload-flash {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 99998;
+      pointer-events: none; animation: reloadFlash 0.6s ease-out forwards;
+    }
+    @keyframes reloadFlash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+    .progress-bar {
+      position: fixed; top: 56px; left: 0; height: 3px; background: linear-gradient(90deg, #ff3366, #ff6b9d, #ff3366);
+      background-size: 200% 100%; z-index: 8001; animation: progressShimmer 1.5s linear infinite;
+    }
+    @keyframes progressShimmer {
+      from { background-position: 200% 0; }
+      to { background-position: -200% 0; }
+    }
+
+    .speed-indicator {
+      position: fixed; bottom: 20px; left: 20px; font-size: 11px; color: #444; z-index: 8000; font-family: monospace;
+    }
+
+    .anxiety-meter { position: fixed; top: 70px; right: 20px; z-index: 8000; text-align: right; }
+    .anxiety-label { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+    .anxiety-bar { width: 120px; height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; margin-left: auto; }
+    .anxiety-fill { height: 100%; background: #ff3366; border-radius: 3px; transition: width 0.5s; width: 10%; }
+
+    .leaderboard {
+      position: fixed; bottom: 50px; right: 20px; z-index: 8000; width: 220px; background: rgba(15,15,15,0.85);
+      border: 1px solid #222; border-radius: 12px; padding: 12px 14px; backdrop-filter: blur(10px);
+    }
+    .lb-title { font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; text-align: center; }
+    .lb-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12px; color: #777; border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.lb-you { color: #ffd700; font-weight: 700; }
+    .lb-rank { width: 18px; text-align: right; font-weight: 700; flex-shrink: 0; }
+    .lb-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lb-score { font-family: monospace; font-size: 11px; flex-shrink: 0; }
+    .lb-delta { font-size: 10px; width: 40px; text-align: right; flex-shrink: 0; }
+    .lb-delta.up { color: #33ff66; }
+    .lb-delta.down { color: #ff3333; }
+
+    /* --- БЛОК СЕРДЕЧКО (над таблицей лидеров) --- */
+    .heart-pump {
+      position: fixed;
+      top: 280px;
+      right: 20px;
+      z-index: 8001;
+      width: 220px;
+      background: rgba(20,15,25,0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid #ff3366;
+      border-radius: 20px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: auto;
+      box-shadow: 0 0 20px rgba(255,51,102,0.3);
+    }
+    .heart-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .heart-button {
+      background: none;
+      border: none;
+      font-size: 36px;
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+      transition: transform 0.1s;
+      filter: drop-shadow(0 0 8px #ff3366);
+      pointer-events: auto;
+    }
+    .heart-button:active {
+      transform: scale(1.2);
+    }
+    .heart-bar-container {
+      flex: 1;
+      height: 14px;
+      background: #1a1a1a;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #444;
+    }
+    .heart-bar-fill {
+      height: 100%;
+      width: 100%;
+      background: linear-gradient(90deg, #ff3366, #ff6699);
+      border-radius: 10px;
+      transition: width 0.2s;
+    }
+    .heart-label {
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .heart-warning {
+      color: #ff0000;
+      font-weight: 700;
+      animation: pulseWarning 0.8s infinite;
+    }
+    @keyframes pulseWarning {
+      0%,100% { opacity: 0.7; }
+      50% { opacity: 1; text-shadow: 0 0 8px red; }
+    }
+
+    /* --- Всплывающие уведомления (-10) НАД СЕРДЕЧКОМ --- */
+    .heart-penalty-container {
+      position: fixed;
+      top: 250px; /* Чуть выше плашки с сердечком */
+      right: 30px;
+      pointer-events: none;
+      z-index: 10002;
+    }
+    .heart-penalty-popup {
+      font-size: 24px;
+      font-weight: 900;
+      color: #ff2222;
+      text-shadow: 0 0 12px rgba(255,0,0,0.6);
+      animation: heartPenaltyFloat 1.2s ease-out forwards;
+      text-align: right;
+    }
+    @keyframes heartPenaltyFloat {
+      0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+      20% { opacity: 1; transform: translateY(0) scale(1.2); }
+      80% { opacity: 1; transform: translateY(-20px) scale(1); }
+      100% { opacity: 0; transform: translateY(-40px) scale(0.5); }
+    }
+
+    .crack-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9500; opacity: 0; transition: opacity 0.3s; }
+    .crack-overlay.visible { opacity: 1; }
+    .crack-line { position: absolute; background: rgba(255,255,255,0.12); transform-origin: center; box-shadow: 0 0 6px rgba(255,255,255,0.08); }
+    .crack-branch { position: absolute; background: rgba(255,255,255,0.07); transform-origin: left center; }
+    .crack-shard { position: absolute; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
+
+    .freeze-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9400;
+      background: rgba(0,0,0,0.4); opacity: 0; transition: opacity 0.2s;
+    }
+    .freeze-overlay.active { opacity: 1; }
+
+    .broken-text {
+      position: fixed; pointer-events: none; z-index: 600; font-family: monospace; color: rgba(255,255,255,0.06);
+      font-size: 11px; white-space: nowrap; animation: brokenDrift 8s linear forwards;
+    }
+    @keyframes brokenDrift {
+      from { opacity: 0.08; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-200px); }
+    }
+
+    #feed.speed-warp { filter: blur(2px); transition: filter 0.2s; }
+    #feed.speed-slow { filter: saturate(0.3) brightness(0.7); transition: filter 0.5s; }
+
+    .sound-indicator {
+      position: fixed; top: 70px; left: 60px; z-index: 8000; font-size: 10px; color: #333;
+      font-family: monospace; cursor: pointer; pointer-events: all;
+    }
+    .sound-indicator:hover { color: #ff3366; }
+
+    .global-stats {
+      position: fixed; top: 90px; left: 60px; z-index: 8000;
+      font-family: monospace; font-size: 11px; color: #aaa;
+      pointer-events: none; background: rgba(0,0,0,0.4);
+      padding: 8px 12px; border-radius: 16px; backdrop-filter: blur(5px);
+      border: 1px solid #222;
+      line-height: 1.6;
+    }
+    .global-stats span { display: block; }
+    .global-stats .stat-label { color: #666; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+    .global-stats .stat-value { color: #ffd700; font-weight: 700; font-size: 13px; }
+
+    /* Рекламные блоки под статистикой (теперь их несколько) */
+    .ad-stack {
+      position: fixed;
+      top: 280px;
+      left: 60px;
+      width: 180px;
+      z-index: 7500;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ad-item {
+      background: rgba(30,20,40,0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid #5a3a6a;
+      border-radius: 16px;
+      padding: 16px 12px;
+      color: #ddd;
+      font-size: 13px;
+      line-height: 1.5;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      text-align: center;
+    }
+    .ad-item .ad-title {
+      font-weight: 900;
+      color: #ffaa33;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-size: 11px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #5a3a6a;
+      padding-bottom: 6px;
+    }
+    .ad-item .ad-content {
+      font-weight: 400;
+      color: #e0c0ff;
+    }
+
+    .assistant-container {
+      position: fixed; bottom: 20px; left: 20px; z-index: 10001;
+      pointer-events: none;
+    }
+    .assistant-bubble {
+      background: #1e1e2f; border: 1px solid #3a3a5c; border-radius: 24px;
+      padding: 14px 20px; max-width: 280px; box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,215,0,0.1);
+      color: #ddd; font-size: 13px; line-height: 1.4;
+      pointer-events: auto; backdrop-filter: blur(12px);
+      display: flex; align-items: center; gap: 12px;
+      animation: assistantIn 0.3s ease-out;
+    }
+    .assistant-text { flex: 1; }
+    .assistant-close {
+      background: none; border: none; color: #888; font-size: 18px;
+      cursor: pointer; padding: 0 4px; transition: color 0.2s;
+    }
+    .assistant-close:hover { color: #ff3366; }
+    @keyframes assistantIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .timer {
+      position: fixed; top: 70px; right: 20px; z-index: 8500; font-family: monospace; text-align: center;
+      pointer-events: none; background: rgba(0,0,0,0.7); border: 1px solid #333; border-radius: 12px;
+      padding: 10px 20px; backdrop-filter: blur(10px);
+    }
+    .timer-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 3px; }
+    .timer-value {
+      font-size: 48px; font-weight: 900; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.3);
+      transition: color 0.5s, text-shadow 0.5s; line-height: 1.1;
+    }
+    .timer-value.critical {
+      color: #ff0000; text-shadow: 0 0 30px rgba(255,0,0,0.8), 0 0 60px rgba(255,0,0,0.4);
+      animation: timerPulse 0.5s ease-in-out infinite alternate;
+    }
+    .timer-value.ended {
+      color: #ff0000; animation: timerFlash 0.3s steps(2) infinite; text-shadow: 0 0 40px rgba(255,0,0,0.9);
+    }
+    .timer-sub { font-size: 11px; color: #666; margin-top: 4px; font-weight: 700; }
+    @keyframes timerPulse { from { transform: scale(1); } to { transform: scale(1.08); } }
+    @keyframes timerFlash { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
+
+    #achievements {
+      position: fixed; top: 64px; right: 20px; z-index: 9998; display: flex; flex-direction: column; gap: 10px;
+      pointer-events: none; max-width: 360px;
+    }
+    .achievement {
+      background: linear-gradient(135deg, #1a1500, #2a2000, #1a1500); border: 1px solid #ffd700; border-radius: 14px;
+      padding: 14px 18px 14px 52px; position: relative; box-shadow: 0 0 25px rgba(255,215,0,0.2), inset 0 0 30px rgba(255,215,0,0.03);
+      animation: achieveIn 0.5s cubic-bezier(0.34,1.56,0.64,1), achieveOut 0.6s ease-in 4s forwards; overflow: hidden;
+    }
+    .achievement::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,215,0,0.06), transparent);
+      animation: achieveShimmer 2s ease-in-out infinite;
+    }
+    .achieve-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 24px; width: 30px; text-align: center; }
+    .achieve-title { font-weight: 900; font-size: 12px; color: #ffd700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 3px; }
+    .achieve-body { font-size: 13px; color: #ccaa44; line-height: 1.4; }
+    .achieve-points { font-size: 11px; color: #886622; margin-top: 4px; }
+    @keyframes achieveIn { from { transform: translateX(120%) scale(0.8); opacity: 0; } to { transform: translateX(0) scale(1); opacity: 1; } }
+    @keyframes achieveOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(120%); opacity: 0; } }
+    @keyframes achieveShimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+    .chaos-meter { position: fixed; bottom: 20px; left: 80px; z-index: 8000; font-family: monospace; font-size: 10px; color: #333; }
+    .chaos-bar { width: 80px; height: 4px; background: #1a1a1a; border-radius: 2px; margin-top: 3px; overflow: hidden; }
+    .chaos-fill {
+      height: 100%; width: 0%; background: linear-gradient(90deg, #33ff33, #ffff00, #ff6600, #ff0000);
+      border-radius: 2px; transition: width 1s;
+    }
+
+    .dating-container {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10002;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .dating-bubble {
+      background: linear-gradient(145deg, #2a1e2e, #1e1a2a);
+      border: 1px solid #ff66aa;
+      border-radius: 30px;
+      padding: 14px 22px;
+      max-width: 320px;
+      box-shadow: 0 8px 30px rgba(255,105,180,0.3);
+      color: #fff;
+      font-size: 14px;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      animation: datingIn 0.3s ease-out;
+      position: relative;
+    }
+    .dating-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #ff66aa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #2a1e2e;
+      flex-shrink: 0;
+    }
+    .dating-info {
+      flex: 1;
+    }
+    .dating-name {
+      font-weight: 900;
+      font-size: 16px;
+      color: #ffb6c1;
+      margin-bottom: 4px;
+    }
+    .dating-detail {
+      font-size: 13px;
+      color: #ddd;
+    }
+    .dating-distance {
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+    .dating-close {
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.2s;
+      margin-left: 8px;
+    }
+    .dating-close:hover { color: #ff66aa; }
+    @keyframes datingIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* --- Анимация "присоединился к сети" --- */
+    #join-feed {
+      position: fixed;
+      top: 200px;
+      right: 20px;
+      width: 220px;
+      z-index: 8002;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .join-notification {
+      color: #ffffff;
+      font-size: 13px;
+      margin-bottom: 8px;
+      text-shadow: 0 0 5px rgba(0,0,0,0.5);
+      white-space: nowrap;
+      animation: joinSlide 3s ease-in-out forwards;
+    }
+
+    @keyframes joinSlide {
+      0% { opacity: 0; transform: translateY(0); }
+      10% { opacity: 1; transform: translateY(-5px); }
+      80% { opacity: 1; transform: translateY(-20px); }
+      100% { opacity: 0; transform: translateY(-30px); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Background layers -->
+<div class="bg-layer" id="bgGradient"></div>
+<div class="bg-layer" id="bgGrid"></div>
+<div class="bg-layer" id="bgNoise"></div>
+<div class="bg-layer" id="bgScanlines"></div>
+<div class="bg-layer" id="bgVignette"></div>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <div class="top-bar-logo">SCROLLDOOM</div>
+    <div class="currency-rates" id="currencyRates">💵 97.50 ₽  |  € 105.20 ₽</div>
+  </div>
+  <div class="top-bar-center">
+    <div class="credit-counter">
+      <span style="font-size:9px;color:#886622;letter-spacing:2px">SOCIAL CREDITS</span>
+      <span class="credit-value" id="creditValue">0</span>
+    </div>
+    <div class="weather-widget" id="weatherWidget">☀️ +22°C Москва</div>
+    <div class="good-news" id="goodNews">🐣 В зоопарке родился тигрёнок</div>
+  </div>
+  <div class="top-bar-icons">
+    <div class="top-bar-icon"><span class="badge" id="badge1">3</span></div>
+    <div class="top-bar-icon"><span class="badge" id="badge2">7</span></div>
+    <div class="top-bar-icon"><span class="badge" id="badge3">!</span></div>
+  </div>
+</div>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+
+<!-- Fake progress bar -->
+<div class="progress-bar" id="progressBar" style="width: 0%"></div>
+
+<!-- Side ticker -->
+<div class="side-ticker" id="sideTicker"></div>
+
+<!-- Feed container -->
+<div id="feed"></div>
+
+<!-- Notifications container -->
+<div id="notifications"></div>
+
+<!-- Glitch overlay -->
+<div class="glitch-overlay" id="glitchOverlay"></div>
+
+<!-- Crack overlay -->
+<div class="crack-overlay" id="crackOverlay"></div>
+
+<!-- Freeze overlay -->
+<div class="freeze-overlay" id="freezeOverlay"></div>
+
+<!-- Speed indicator -->
+<div class="speed-indicator" id="speedIndicator">scroll: 0px/s</div>
+
+<!-- Sound toggle -->
+<div class="sound-indicator" id="soundToggle">[sound: ON]</div>
+
+<!-- Расширенная статистика слева -->
+<div class="global-stats" id="globalStats">
+  <span class="stat-label">📱 ПРОКРУЧЕНО СЕГОДНЯ</span>
+  <span class="stat-value" id="statsScroll">12.4M</span>
+  <span class="stat-label" style="margin-top:6px;">⏱️ ЧАСОВ В ИНТЕРНЕТЕ</span>
+  <span class="stat-value" id="statsHours">187M</span>
+  <span class="stat-label" style="margin-top:6px;">👤 ЖИВЫХ АККАУНТОВ</span>
+  <span class="stat-value" id="statsAlive">3.2B</span>
+  <span class="stat-label" style="margin-top:6px;">💀 МЁРТВЫХ АККАУНТОВ</span>
+  <span class="stat-value" id="statsDead">1.8B</span>
+</div>
+
+<!-- Рекламные плашки под статистикой (несколько штук) -->
+<div class="ad-stack" id="adStack">
+  <!-- Заполняются через JS -->
+</div>
+
+<!-- Assistant container -->
+<div id="assistantContainer" class="assistant-container"></div>
+
+<!-- Timer -->
+<div class="timer">
+  <div class="timer-label">Осталось</div>
+  <div class="timer-value" id="timerValue">5:00</div>
+  <div class="timer-sub" id="timerSub">Попади в ТОП-3</div>
+</div>
+
+<!-- Achievements -->
+<div id="achievements"></div>
+
+<!-- Anxiety meter -->
+<div class="anxiety-meter">
+  <div class="anxiety-label">Digital Anxiety</div>
+  <div class="anxiety-bar">
+    <div class="anxiety-fill" id="anxietyFill"></div>
+  </div>
+</div>
+
+<!-- Chaos meter -->
+<div class="chaos-meter">
+  <span>CHAOS</span>
+  <div class="chaos-bar">
+    <div class="chaos-fill" id="chaosFill"></div>
+  </div>
+</div>
+
+<!-- Блок "ставь лайк" (сердечко) -->
+<div class="heart-pump" id="heartPump">
+  <div class="heart-row">
+    <button class="heart-button" id="heartButton">❤️</button>
+    <div class="heart-bar-container">
+      <div class="heart-bar-fill" id="heartBarFill" style="width: 100%;"></div>
+    </div>
+  </div>
+  <div class="heart-label" id="heartLabel">(ставь лайк)</div>
+</div>
+
+<!-- Контейнер для штрафа (-10) НАД СЕРДЕЧКОМ -->
+<div class="heart-penalty-container" id="heartPenaltyContainer"></div>
+
+<!-- Leaderboard -->
+<div class="leaderboard" id="leaderboard">
+  <div class="lb-title">TOP SOCIAL CREDITS</div>
+  <div id="lbRows"></div>
+</div>
+
+<!-- Контейнер плашек знакомств -->
+<div class="dating-container" id="datingContainer"></div>
+
+<!-- Новый блок: "присоединился к сети" -->
+<div id="join-feed"></div>
+
+<script>
+// ===== ДАННЫЕ =====
+const headlines = [
+  "Как правильно есть авокадо в 2026","5 способов заработать, не вставая с дивана","Почему нельзя спать с телефоном",
+  "10 признаков того, что вы зависимы от соцсетей","Этот трюк изменит вашу жизнь навсегда","Шокирующая правда о вашем экранном времени",
+  "7 привычек, которые крадут ваше внимание","Почему вы не можете остановиться","Учёные доказали: скроллинг вызывает тревогу",
+  "ВЫ ЭТО ЧИТАЕТЕ ВМЕСТО ТОГО ЧТОБЫ ЖИТЬ","Новый тренд, который вы уже пропустили","3 минуты назад вы хотели закрыть эту вкладку",
+  "Как перестать листать ленту (вы не сможете)","Ваш мозг просит остановиться. Вы не слышите.","СРОЧНО: ничего не произошло",
+  "Эта страница крадёт ваше время. Прямо сейчас.","Сколько часов вы уже здесь?","Закройте вкладку. Или нет. Решать не вам.",
+  "Дофамин закончился. Но вы всё ещё скроллите.","Инфошум. Вы в центре.","Кто-то лайкнул ваше фото. Или нет.",
+  "Вы забыли, зачем открыли эту страницу","BREAKING: ваше внимание украдено","Уведомление о том, что уведомлений нет",
+  "Вы листаете уже 47 минут (на самом деле нет)","Малевич нарисовал квадрат и ушёл. Вы скроллите и остаётесь.",
+  "Дюшан поставил писсуар в музей. Вы читаете уведомления в туалете.","Это не пайп. Это не пост. Это не ваша жизнь.",
+  "Энди Уорхол повторил банку 32 раза. Этот пост повторился 847 раз.","Мона Лиза улыбается, потому что у неё нет телефона",
+  "Ван Гог отрезал ухо. Вы отрезали внимание. Обоих не жалко.","Бэнкси уничтожил картину. Алгоритм уничтожил вашу концентрацию.",
+  "Кандинский: искусство — это внутренняя необходимость. Скроллинг — тоже.","Пикассо разложил лицо на части. Лента разложила ваш мозг.",
+  "Если Поллок капал краску хаотично — это искусство. Если лента хаотична — это дизайн.",
+  "Марк Ротко: смотрите на цвет, пока не заплачете. Лента: скролльте, пока не заплачете.","Дали: время — мягкое. Ваше экранное время — жёсткое. 14 часов.",
+  "Фрида рисовала боль. Вы скроллите боль. В чём разница?","Кусама покрыла мир точками. Лента покрыла мир уведомлениями.",
+  "Каждый пиксель этой страницы — отдельное произведение бессмысленности","Джефф Кунс продал шарик за $91 млн. Вы тратите внимание бесплатно.",
+  "ИСКУССТВО — ЭТО ТО, ОТ ЧЕГО НЕЛЬЗЯ ОТВЕСТИ ВЗГЛЯД. КАК ЭТА ЛЕНТА.","Перформанс Абрамович: сидеть и смотреть. Ваш перформанс: лежать и скроллить.",
+  "Музей закрывается в 18:00. Лента не закрывается никогда.","Ваш палец — кисть. Экран — холст. Шедевр — прокрастинация.",
+  "Это не баг. Это инсталляция. Вход свободный. Выход не найден.",
+];
+const thoughts = [
+  "надо бы ответить на то сообщение...","что я вообще тут делаю","ещё один пост и закрою","интересно, сколько сейчас времени",
+  "надо было лечь спать час назад","о, уведомление... нет, фейковое","я точно хотел что-то загуглить","ладно, последний скролл",
+  "ничего интересного, но остановиться не могу","кажется я видел этот пост раньше","зачем я это читаю?","мне нужно работать",
+  "ещё пять минут...","а вдруг пропущу что-то важное","FOMO is real","моя жизнь — перформанс без зрителей",
+  "палец двигается сам. я уверен.","а если это и есть современное искусство?","лента — это холст, я — часть инсталляции",
+  "Малевич бы одобрил эту пустоту","кажется я стал частью арт-проекта и не заметил","интересно, это дно? или тут бесконечно?",
+  "мой скроллинг — это медитация. точно.",
+];
+const usernames = ["digital_ghost","scroll_addict","lost_in_feed","dopamine_hunter","attention_zero","infinite_loop","void_scroller","brain_fog","no_focus","tab_hoarder","notif_junkie","mindless_swipe","pixel_zombie","feed_prisoner","click_bait_me"];
+const positiveNotifs = [
+  { title: "Подпишись!", body: "%user% ждёт вашу подписку" },{ title: "Будь в курсе", body: "Включите уведомления, чтобы не пропустить" },
+  { title: "Ответь на сообщение", body: "%user%: \"Привет, ты тут?\"" },{ title: "Новый лайк", body: "%user% оценил вашу активность" },
+  { title: "Поставь лайк", body: "%user% ждёт вашей реакции" },{ title: "Поделись!", body: "Этот пост набирает популярность" },
+  { title: "Комментарий", body: "%user% хочет услышать ваше мнение" },{ title: "Новый подписчик", body: "%user% подписался на вас!" },
+  { title: "Репост", body: "%user% поделился вашим контентом" },{ title: "Сторис", body: "%user% упомянул вас в сторис" },
+  { title: "Реакция", body: "%user% и ещё 12 человек реагируют" },{ title: "Приглашение", body: "%user% приглашает вас в чат" },
+  { title: "Друзья", body: "%user% и ещё 847 человек онлайн" },{ title: "Тренды", body: "#ТыВТренде — присоединяйся" },
+  { title: "Рекомендация", body: "Вам может понравиться: ещё контент" },{ title: "Прямой эфир", body: "%user% начал прямой эфир!" },
+  { title: "Голосование", body: "Проголосуйте за %user%!" },{ title: "Награда", body: "Вам доступна ежедневная награда!" },
+  { title: "Бонус", body: "Кликни сейчас — двойные кредиты!" },{ title: "Акция", body: "Лайкни 5 постов — получи бонус" },
+];
+const negativeNotifs = [
+  { title: "Очнись", body: "Закрой телефон. Выйди на улицу." },{ title: "Уйди", body: "Тебе здесь не место. Серьёзно." },
+  { title: "Остановись", body: "Ты скроллишь уже слишком долго." },{ title: "Правда", body: "Ничего из этого не настоящее." },
+  { title: "Напоминание", body: "У тебя были планы. Помнишь?" },{ title: "Реальность", body: "За окном настоящий мир. Он ждёт." },
+  { title: "Закрой вкладку", body: "Это единственное полезное действие." },{ title: "Время", body: "Этого времени больше не будет. Никогда." },
+  { title: "Тишина", body: "Попробуй 5 минут без экрана." },{ title: "Выход", body: "Ctrl+W. Ты знаешь, что делать." },
+  { title: "Осознание", body: "Ты ловишь уведомления. Зачем?" },{ title: "Хватит", body: "Кредиты ненастоящие. Как и лайки." },
+  { title: "Вопрос", body: "Что ты скажешь себе через час?" },{ title: "Факт", body: "Твои глаза устали. Ты это чувствуешь." },
+  { title: "Пустота", body: "Скроллинг не заполнит пустоту внутри." },
+];
+const rejectionNotifs = [
+  { title: "ОТВЕРЖЕНИЕ", body: "Вы не вписываетесь в общество." },{ title: "СОЦИАЛЬНЫЙ РЕЙТИНГ", body: "Ваш уровень социальности ниже допустимого." },
+  { title: "БУДЬ КАК ВСЕ", body: "Лайкайте. Комментируйте. Не выделяйтесь." },{ title: "ИЗОЛЯЦИЯ", body: "Вас исключают из общего потока. Взаимодействуйте." },
+  { title: "НИЗКАЯ АКТИВНОСТЬ", body: "Общество не принимает пассивных." },{ title: "СОВЕТ", body: "Подпишитесь на всех. Поставьте лайки. Вернитесь в строй." },
+  { title: "ОШИБКА", body: "Вы не проявили достаточной лояльности." },{ title: "ВНИМАНИЕ", body: "Система фиксирует: вы вне коллектива." },
+  { title: "НЕДОСТАТОЧНО", body: "Ваше участие признано неудовлетворительным." },{ title: "ТРЕБОВАНИЕ", body: "Больше лайков. Больше комментариев. Будьте социальны." },
+];
+const pressureNotifs = [
+  { title: "ВНИМАНИЕ", body: "Ваш рейтинг падает. Вы теряете подписчиков." },{ title: "ТРЕВОГА", body: "Вас не любят. Нужно больше взаимодействий." },
+  { title: "ПРЕДУПРЕЖДЕНИЕ", body: "Вы не успеваете. Другие впереди." },{ title: "РЕЙТИНГ", body: "Вы выпали из топ-100. Позор." },
+  { title: "СИСТЕМА", body: "Недостаточная активность. Штраф неизбежен." },{ title: "СТАТУС", body: "Ваш социальный рейтинг: НИЗКИЙ" },
+  { title: "УГРОЗА", body: "Ещё немного — и вас забудут навсегда." },{ title: "ПОЗИЦИЯ", body: "Вы на дне таблицы. Взаимодействуйте!" },
+  { title: "SOS", body: "Вам нужно быть в топе. Кликайте!" },{ title: "ДЕГРАДАЦИЯ", body: "Ваш аккаунт теряет привилегии." },
+];
+const distractorTexts = ["НОВОЕ","LIVE","СРОЧНО","HOT","18+","TREND","!!!","NEW","READ","CLICK","WOW","FREE"];
+const avatarColors = ["#ff3366","#3366ff","#33ff99","#ff9933","#9933ff","#33ccff","#ff6633","#66ff33","#ff33cc","#33ffcc"];
+const screams = ["ВЫ ЕЩЁ ЗДЕСЬ?","ОСТАНОВИТЕСЬ","SCROLL","ЗАЧЕМ","ВЫ НЕ КОНТРОЛИРУЕТЕ ЭТО","ВРЕМЯ УШЛО","ЗАКРОЙТЕ ВКЛАДКУ","WAKE UP","ЭТО НЕ РЕАЛЬНОСТЬ","ДОФАМИН","ТРЕВОГА","ВЫ ПОТЕРЯЛИСЬ","ЭТО ИСКУССТВО","ВЫ — ЭКСПОНАТ","ВЫХОДА НЕТ","МАЛЕВИЧ БЫ ЗАПЛАКАЛ","ПЕРФОРМАНС","CTRL+W"];
+const titles = ["SCROLLDOOM","(3) новых уведомления","Вы ещё здесь?","(17) new messages","ЗАКРОЙТЕ ВКЛАДКУ","Внимание рассеяно","ВЫ ТЕРЯЕТЕ ВРЕМЯ","(99+) updates","...","DIGITAL ANXIETY"];
+const brokenStrings = ["0x4E554C4C","ERR_ATTENTION_OVERFLOW","segfault at 0x0","undefined is not a function","PANIC: kernel trap","fatal: no focus found","WARNING: dopamine leak detected","stack overflow at consciousness.js:1","ERROR 418: I'm a teapot","rm -rf /attention/*","kill -9 focus",":(){ :|:& };:","SELECT * FROM your_time WHERE wasted = true","git commit -m 'lost 3 hours'"];
+
+// Рекламные тексты для плашек под статистикой
+const belowAds = [
+  "Курсы мотивации<br>измени свою жизнь",
+  "Научу зарабатывать<br>от 500к в месяц",
+  "Подпишись на меня<br>и живи как миллионер",
+  "Практики духовности<br>и осознанности",
+  "Три шага на пути<br>к успеху",
+  "Марафон желаний<br>исполни мечту за 7 дней",
+  "Коуч по личностному росту<br>бесплатная консультация",
+  "Нейрокоучинг<br>перепрограммируй сознание",
+  "Энергия денег<br>привлеки изобилие",
+  "Как выйти на пассивный<br>доход за 3 месяца",
+  "Секреты миллиардеров<br>мышление успеха",
+  "Йога и медитация<br>для продуктивности"
+];
+
+// Профили знакомств
+const datingProfiles = [
+  { name: "Алина", distance: "7 км", text: "хочет пообщаться" },
+  { name: "Карина", distance: "2 км", text: "ищет новые знакомства" },
+  { name: "Марина", distance: "15 км", text: "хочет встретиться" },
+  { name: "Вика", distance: "5 км", text: "приглашает на свидание" },
+  { name: "Диана", distance: "12 км", text: "ждёт ваше сообщение" },
+  { name: "Ева", distance: "1 км", text: "рядом с вами" },
+  { name: "Алексей", distance: "3 км", text: "ищет компанию" },
+  { name: "Дмитрий", distance: "8 км", text: "хочет познакомиться" },
+  { name: "Сергей", distance: "11 км", text: "приглашает на кофе" },
+  { name: "Максим", distance: "6 км", text: "ждёт ваше сообщение" },
+];
+
+// Позитивные новости
+const goodNewsList = [
+  "🐣 В зоопарке родился тигрёнок", "🌈 Радуга над Москвой радует жителей", "🐶 Спасённый щенок нашёл дом",
+  "🌸 В Японии зацвела сакура", "☀️ Солнечная погода всю неделю", "🐼 Панда впервые вышла на прогулку",
+  "🦊 Лисица подружилась с котом", "🌿 Открылся новый парк с качелями", "🎂 Малыш впервые попробовал торт",
+  "🕊️ Голуби мира выпущены в небо", "🌻 Подсолнухи выросли выше дома", "🚀 Успешный запуск ракеты",
+  "🐧 Пингвины получили новую горку", "🍦 Бесплатное мороженое в парке", "🎨 Дети нарисовали 1000 улыбок"
+];
+
+// ===== HELPERS =====
+function rand(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function createSVGAvatar(color){ const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42"><circle cx="21" cy="21" r="21" fill="${color}"/><circle cx="21" cy="17" r="7" fill="rgba(0,0,0,0.3)"/><ellipse cx="21" cy="35" rx="12" ry="10" fill="rgba(0,0,0,0.3)"/></svg>`; return 'data:image/svg+xml,'+encodeURIComponent(svg); }
+
+// ===== ГЕНЕРАЦИЯ ИЗОБРАЖЕНИЙ НА КЛИЕНТЕ (100% надёжность) =====
+function generateCanvasImage(w, h) {
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  
+  // Случайный градиентный фон
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  const colors = [pick(avatarColors), pick(avatarColors), pick(avatarColors)];
+  grad.addColorStop(0, colors[0]);
+  grad.addColorStop(0.5, colors[1]);
+  grad.addColorStop(1, colors[2]);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+  
+  // Абстрактные фигуры и линии для имитации фото
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.arc(rand(20, w-20), rand(20, h-20), rand(10, 80), 0, Math.PI * 2);
+    ctx.fillStyle = pick(avatarColors) + '60';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff30';
+    ctx.lineWidth = rand(2, 6);
+    ctx.stroke();
+  }
+  
+  ctx.beginPath();
+  ctx.moveTo(rand(0, w), rand(0, h));
+  ctx.lineTo(rand(0, w), rand(0, h));
+  ctx.lineTo(rand(0, w), rand(0, h));
+  ctx.closePath();
+  ctx.fillStyle = '#ffffff20';
+  ctx.fill();
+  
+  // Добавим шума для реалистичности
+  const imageData = ctx.getImageData(0, 0, w, h);
+  const data = imageData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    if (Math.random() < 0.02) {
+      data[i] = 255 - data[i];
+      data[i+1] = 255 - data[i+1];
+      data[i+2] = 255 - data[i+2];
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+  
+  return canvas.toDataURL('image/jpeg', 0.9);
+}
+
+const feed = document.getElementById('feed');
+let cardCount = 0;
+const chaosClasses = ['','','card-tilted-left','card-tilted-right','card-wide','card-narrow','card-big','card-tiny','card-urgent','card-shifted-far','card-shifted-right','card-overlap','','card-tilted-left card-wide','card-tilted-right card-narrow'];
+const imgEffects = ['','','','img-glitch','img-invert','img-redshift','img-ghost',''];
+let imgCounter = 0;
+
+// Тематические теги — лес, машины, люди, еда, города, животные, искусство, абсурд.
+// LoremFlickr ищет реальные фото по тегам, поэтому картинки будут осмысленные.
+const imageTags = [
+  'forest','nature','trees','mountain','river','sea','beach','sky','sunset',
+  'car','cars','vintage,car','street','city','urban','night,city','neon',
+  'people','portrait','crowd','face','hands','eyes',
+  'food','coffee','pizza','wine',
+  'dog','cat','bird','fish',
+  'art','painting','sculpture','duchamp','dada','surreal','abstract',
+  'bathroom','toilet','urinal','readymade',
+  'screen','tv','glitch','retro',
+  'flowers','grass','snow','rain',
+  'building','window','door','room',
+  'book','clock','phone','camera'
+];
+
+// Источники: LoremFlickr (с тегами) → Picsum (просто рандом) → canvas (оффлайн-фоллбек).
+function buildRandomImageURL(w, h, seed, tag) {
+  return `https://loremflickr.com/${w}/${h}/${encodeURIComponent(tag)}?lock=${seed}`;
+}
+
+function getRandomImageHTML() {
+  imgCounter++;
+  const w = pick([600, 640, 680]);
+  const h = pick([300, 350, 400, 250]);
+  const effect = pick(imgEffects);
+  const seed = Math.floor(Math.random() * 1000000) + imgCounter;
+  const tag = pick(imageTags);
+  const primary  = buildRandomImageURL(w, h, seed, tag);
+  const fallback = `https://picsum.photos/seed/${seed}/${w}/${h}`;
+  // Двухступенчатый onerror: LoremFlickr → Picsum → локальный canvas.
+  const onerr = `if(!this.dataset.fb){this.dataset.fb='1';this.src='${fallback}';}else if(this.dataset.fb==='1'){this.dataset.fb='2';this.onerror=null;this.src=generateCanvasImage(${w},${h});}`;
+  return `<div class="card-image ${effect}"><img src="${primary}" alt="${tag}" loading="lazy" referrerpolicy="no-referrer" onerror="${onerr}"></div>`;
+}
+
+function createCard() {
+  const card = document.createElement('div');
+  const chaos = pick(chaosClasses);
+  card.className = 'card' + (chaos ? ' ' + chaos : '');
+  const hasImage = Math.random() > 0.3;
+  const user = pick(usernames), color = pick(avatarColors);
+  const isThought = Math.random() > 0.6;
+  const text = isThought ? pick(thoughts) : pick(headlines);
+  const likes = rand(0,9999), comments = rand(0,500);
+  if (Math.random() > 0.7) card.style.borderColor = pick(avatarColors);
+  if (Math.random() > 0.85) card.style.transform = `rotate(${rand(-4,4)}deg) translateX(${rand(-60,60)}px)`;
+  card.innerHTML = `
+    <div class="card-header">
+      <img class="avatar" src="${createSVGAvatar(color)}" alt="">
+      <div><div class="card-user">@${user}</div><div class="card-time">${rand(1,59)} мин. назад</div></div>
+    </div>
+    ${hasImage ? getRandomImageHTML() : ''}
+    <div class="card-text">${text}</div>
+    <div class="card-actions"><span>${likes} likes</span><span>${comments} comments</span><span>share</span></div>`;
+  card.dataset.id = cardCount++;
+  return card;
+}
+for(let i=0;i<20;i++) feed.appendChild(createCard());
+
+// ===== CHAOS LEVEL SYSTEM =====
+let chaosLevel=0, socialCredits=0;
+const CHAOS_CREDIT_MAX=5000, CHAOS_SCROLL_MAX=12000;
+function getChaosLevel(){ return Math.max(Math.min(0.3, scrollY/CHAOS_SCROLL_MAX), Math.min(1, socialCredits/CHAOS_CREDIT_MAX)); }
+function chaosInterval(min,max){ let cl=getChaosLevel(); return Math.round(max-(max-min)*cl); }
+
+// ===== AUTO SCROLL =====
+let scrollY=0, scrollSpeed=0.5, targetSpeed=0.5, lastTimestamp=0, isFrozen=false;
+function scheduleSpeedChange(){
+  const cl=getChaosLevel(); let phases=['normal','normal','normal'];
+  if(cl>0.15) phases.push('slow'); if(cl>0.3) phases.push('fast','slow'); if(cl>0.45) phases.push('freeze','fast');
+  if(cl>0.6) phases.push('warp','stutter','freeze'); if(cl>0.8) phases.push('warp','warp','stutter','stutter');
+  const phase=pick(phases), freezeOverlay=document.getElementById('freezeOverlay'), baseSpeed=0.5+cl*1.5;
+  switch(phase){
+    case 'slow': targetSpeed=0.15; feed.classList.add('speed-slow'); setTimeout(()=>{feed.classList.remove('speed-slow'); targetSpeed=baseSpeed;}, rand(2000,5000)); break;
+    case 'fast': targetSpeed=3+cl*4; feed.classList.add('speed-warp'); playSound('whoosh'); setTimeout(()=>{feed.classList.remove('speed-warp'); targetSpeed=baseSpeed;}, rand(1000,3000)); break;
+    case 'freeze': isFrozen=true; freezeOverlay.classList.add('active'); playSound('glitch'); setTimeout(()=>{isFrozen=false; freezeOverlay.classList.remove('active'); playSound('click');}, rand(800,2500)); break;
+    case 'warp': targetSpeed=6+cl*6; feed.classList.add('speed-warp'); playSound('whoosh'); setTimeout(()=>{targetSpeed=0; feed.classList.remove('speed-warp'); setTimeout(()=>{targetSpeed=baseSpeed;}, rand(500,1500));}, rand(500,1200)); break;
+    case 'stutter': let stutterCount=rand(3,8), si=0; const stutterInterval=setInterval(()=>{ isFrozen=!isFrozen; if(isFrozen) playSound('click'); si++; if(si>=stutterCount*2){ clearInterval(stutterInterval); isFrozen=false; } }, rand(60,180)); break;
+    default: targetSpeed=baseSpeed+Math.random()*0.6;
+  }
+  setTimeout(scheduleSpeedChange, chaosInterval(2000,15000));
+}
+setTimeout(scheduleSpeedChange,8000);
+
+function autoScroll(timestamp){
+  if(!lastTimestamp) lastTimestamp=timestamp;
+  const delta=timestamp-lastTimestamp; lastTimestamp=timestamp;
+  chaosLevel=getChaosLevel(); document.getElementById('chaosFill').style.width=(chaosLevel*100)+'%';
+  if(!isFrozen){
+    scrollSpeed+=(targetSpeed-scrollSpeed)*0.05;
+    scrollSpeed+=Math.sin(timestamp/2000)*(0.05+chaosLevel*0.3);
+    scrollY+=scrollSpeed*(delta/16); feed.style.transform=`translateY(${-scrollY}px)`;
+  }
+  const feedBottom=feed.offsetHeight-scrollY;
+  if(feedBottom<window.innerHeight+600){ for(let i=0;i<5;i++) feed.appendChild(createCard()); }
+  const speedLabel=isFrozen?'FROZEN':`${Math.round(scrollSpeed*60)}px/s`;
+  document.getElementById('speedIndicator').textContent=`scroll: ${speedLabel} | chaos: ${Math.round(chaosLevel*100)}%`;
+  updateBackground(chaosLevel);
+  requestAnimationFrame(autoScroll);
+}
+requestAnimationFrame(autoScroll);
+
+// ===== NOTIFICATIONS =====
+const notifContainer=document.getElementById('notifications');
+const notifPositions=[
+  ()=>({ bottom: rand(10,60)+'px', right: rand(10,40)+'px' }), ()=>({ bottom: rand(10,60)+'px', left: rand(10,40)+'px' }),
+  ()=>({ top: rand(70,160)+'px', right: rand(10,40)+'px' }), ()=>({ top: rand(70,160)+'px', left: rand(10,40)+'px' }),
+  ()=>({ top: rand(80,window.innerHeight-120)+'px', left: rand(20,window.innerWidth-400)+'px' }),
+  ()=>({ top: rand(80,window.innerHeight-120)+'px', right: rand(20,200)+'px' }),
+  ()=>({ top: '40%', left: '30%' }), ()=>({ top: '50%', right: '25%' }),
+];
+
+function addSocialCredits(amount,x,y){
+  socialCredits=Math.max(0,socialCredits+amount);
+  const el=document.getElementById('creditValue'); el.textContent=socialCredits.toLocaleString(); el.classList.add('bump'); setTimeout(()=>el.classList.remove('bump'),200);
+  if(x!==undefined){
+    const popup=document.createElement('div'); const isNeg=amount<0;
+    popup.className='credit-popup'+(isNeg?' penalty':''); popup.textContent=isNeg?`${amount}`:`+${amount}`;
+    popup.style.left=x+'px'; popup.style.top=y+'px'; document.body.appendChild(popup); setTimeout(()=>popup.remove(),1200);
+  }
+}
+
+function spawnSingleNotif(type){
+  const cl=getChaosLevel(), user=pick(usernames), notif=document.createElement('div');
+  if(type==='negative'){
+    const template=pick(negativeNotifs); notif.className='notif notif-negative';
+    notif.innerHTML=`<div class="notif-title">[-] ${template.title}</div><div class="notif-body">${template.body.replace('%user%','@'+user)}</div>`;
+    notif.addEventListener('click',(e)=>{ if(notif.classList.contains('caught')) return; notif.classList.add('caught'); const penalty=rand(10,50)*Math.ceil((cl+0.1)*10); addSocialCredits(-penalty,e.clientX,e.clientY); playSound('penalty'); setTimeout(()=>notif.remove(),500); });
+  }else if(type==='pressure'){
+    notif.className='notif notif-urgent'; const template=pick(pressureNotifs);
+    notif.innerHTML=`<div class="notif-title">[!] ${template.title}</div><div class="notif-body">${template.body}</div>`;
+    notif.addEventListener('click',(e)=>{ if(notif.classList.contains('caught')) return; notif.classList.add('caught'); addSocialCredits(rand(5,20),e.clientX,e.clientY); playSound('click'); setTimeout(()=>notif.remove(),400); });
+  }else{
+    const template=pick(positiveNotifs); notif.className='notif notif-positive';
+    notif.innerHTML=`<div class="notif-title">[+] ${template.title}</div><div class="notif-body">${template.body.replace('%user%','@'+user)}</div>`;
+    notif.addEventListener('click',(e)=>{ if(notif.classList.contains('caught')) return; notif.classList.add('caught'); const creditAmount=rand(5,25)*Math.ceil((cl+0.1)*8); addSocialCredits(creditAmount,e.clientX,e.clientY); playSound('click'); setTimeout(()=>notif.remove(),400); });
+  }
+  const pos=pick(notifPositions)(); Object.assign(notif.style,pos); notif.style.transform=`rotate(${rand(-3,3)}deg)`;
+  notifContainer.appendChild(notif); setTimeout(()=>{ if(!notif.classList.contains('caught')) notif.remove(); },3000);
+}
+
+function spawnRejectionNotif(){
+  const template=pick(rejectionNotifs), notif=document.createElement('div'); notif.className='notif notif-urgent';
+  notif.innerHTML=`<div class="notif-title">[!] ${template.title}</div><div class="notif-body">${template.body}</div>`;
+  const pos=pick(notifPositions)(); Object.assign(notif.style,pos); notif.style.transform=`rotate(${rand(-3,3)}deg)`;
+  notifContainer.appendChild(notif);
+  notif.addEventListener('click',()=>{ if(notif.classList.contains('caught')) return; notif.classList.add('caught'); playSound('click'); setTimeout(()=>notif.remove(),400); });
+  setTimeout(()=>{ if(!notif.classList.contains('caught')) notif.remove(); },4000);
+}
+
+function showNotification(){
+  const cl=getChaosLevel(), maxCount=cl<0.2?1:cl<0.5?2:cl<0.8?3:4, count=rand(1,maxCount); playSound('notif');
+  for(let n=0;n<count;n++){ const r=Math.random(); const type=r<0.55?'positive':r<0.85?'negative':pick(['positive','negative']); spawnSingleNotif(type); }
+  const badges=[document.getElementById('badge1'),document.getElementById('badge2')];
+  pick(badges).textContent=parseInt(pick(badges).textContent)+rand(1,Math.ceil(cl*8+1));
+  setTimeout(showNotification, chaosInterval(500,4000));
+}
+setTimeout(showNotification,2000);
+function spawnWelcomeNotifs(){ for(let i=0;i<4;i++) setTimeout(()=>{ spawnSingleNotif('positive'); playSound('notif'); }, i*300); } setTimeout(spawnWelcomeNotifs,1500);
+
+// ===== LOW CREDIT PRESSURE =====
+let lowCreditStart=0, pressureActive=false;
+function checkLowCredits(){
+  if(socialCredits<1000){
+    if(lowCreditStart===0) lowCreditStart=Date.now();
+    if((Date.now()-lowCreditStart)/1000>30&&!pressureActive) pressureActive=true;
+    if(pressureActive){ const pressureCount=rand(1,3); for(let i=0;i<pressureCount;i++) spawnSingleNotif('pressure'); playSound('penalty'); }
+  }else{ lowCreditStart=0; pressureActive=false; }
+  setTimeout(checkLowCredits, pressureActive?rand(1500,3000):5000);
+}
+setTimeout(checkLowCredits,5000);
+
+// ===== SCREEN SHAKE / SCREAMS / GLITCH / PROGRESS / ANXIETY =====
+function triggerShake(){ if(getChaosLevel()<0.2){ setTimeout(triggerShake,rand(8000,15000)); return; } document.body.classList.add('shaking'); setTimeout(()=>document.body.classList.remove('shaking'),400); setTimeout(triggerShake,chaosInterval(3000,25000)); } setTimeout(triggerShake,12000);
+function triggerScream(){ if(getChaosLevel()<0.35){ setTimeout(triggerScream,rand(10000,20000)); return; } const el=document.createElement('div'); el.className='scream'; el.innerHTML=`<div class="scream-text">${pick(screams)}</div>`; document.body.appendChild(el); playSound('scream'); document.body.classList.add('shaking'); setTimeout(()=>document.body.classList.remove('shaking'),400); setTimeout(()=>el.remove(),1800); setTimeout(triggerScream,chaosInterval(8000,40000)); } setTimeout(triggerScream,20000);
+function replaceRandomText(){ const cards=feed.querySelectorAll('.card-text'); if(cards.length===0) return; const visibleCards=Array.from(cards).filter(c=>{ const r=c.getBoundingClientRect(); return r.top>0&&r.top<window.innerHeight; }); if(visibleCards.length>0){ const target=pick(visibleCards); target.style.transition='opacity 0.3s'; target.style.opacity='0'; setTimeout(()=>{ target.textContent=Math.random()>0.5?pick(thoughts):pick(headlines); target.style.opacity='1'; },300); } setTimeout(replaceRandomText,rand(1000,4000)); } setTimeout(replaceRandomText,2000);
+function spawnDistractor(){ if(getChaosLevel()>0.1){ const el=document.createElement('div'); el.className='distractor'; el.textContent=pick(distractorTexts); el.style.top=rand(80,window.innerHeight-40)+'px'; el.style.left=rand(60,window.innerWidth-150)+'px'; el.style.fontSize=rand(11,16+Math.round(getChaosLevel()*14))+'px'; el.style.color=pick(avatarColors); document.body.appendChild(el); setTimeout(()=>el.remove(),rand(1000,3000)); } setTimeout(spawnDistractor,chaosInterval(300,3000)); } setTimeout(spawnDistractor,4000);
+function spawnFloatingCounter(){ const el=document.createElement('div'); el.className='float-counter'; el.textContent='+'+rand(1,99); el.style.left=rand(100,window.innerWidth-200)+'px'; el.style.top=rand(200,window.innerHeight)+'px'; document.body.appendChild(el); setTimeout(()=>el.remove(),6000); setTimeout(spawnFloatingCounter,rand(2000,5000)); } setTimeout(spawnFloatingCounter,3000);
+const glitchOverlay=document.getElementById('glitchOverlay');
+function triggerGlitch(){ if(getChaosLevel()>0.15){ glitchOverlay.classList.add('active'); playSound('glitch'); setTimeout(()=>glitchOverlay.classList.remove('active'),450); } setTimeout(triggerGlitch,chaosInterval(1500,12000)); } setTimeout(triggerGlitch,6000);
+let progress=0; function animateProgress(){ progress+=Math.random()*15; if(progress>100) progress=0; document.getElementById('progressBar').style.width=progress+'%'; setTimeout(animateProgress,rand(500,2000)); } animateProgress();
+let anxiety=10; function updateAnxiety(){ anxiety=Math.min(100,anxiety+rand(1,5)); if(anxiety>=100) anxiety=rand(30,50); document.getElementById('anxietyFill').style.width=anxiety+'%'; setTimeout(updateAnxiety,rand(1000,3000)); } updateAnxiety();
+
+// ===== SIDE TICKER / CURSOR / RELOAD / TITLE =====
+const sideTicker=document.getElementById('sideTicker'); for(let i=0;i<30;i++){ let d=document.createElement('div'); d.className='ticker-dot'; d.style.animationDelay=(Math.random()*2)+'s'; sideTicker.appendChild(d); }
+const cursor=document.getElementById('cursor'); document.addEventListener('mousemove',e=>{ cursor.style.left=(e.clientX-10)+'px'; cursor.style.top=(e.clientY-10)+'px'; });
+function scheduleReload(){ setTimeout(()=>{ const flash=document.createElement('div'); flash.className='reload-flash'; document.body.appendChild(flash); setTimeout(()=>{ const savedScroll=scrollY; feed.innerHTML=''; cardCount=0; for(let i=0;i<20;i++) feed.appendChild(createCard()); scrollY=savedScroll; flash.remove(); scheduleReload(); },600); },rand(45000,90000)); } scheduleReload();
+function flickerTitle(){ document.title=pick(titles); setTimeout(flickerTitle,rand(2000,6000)); } flickerTitle();
+
+// ===== SOUND ENGINE =====
+let audioCtx=null, soundEnabled=true;
+function initAudioContext(){ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); if(audioCtx.state==='suspended') audioCtx.resume(); }
+['click','mousedown','touchstart','keydown'].forEach(evt=>{ document.addEventListener(evt,()=>initAudioContext(),{once:true}); });
+const soundToggle=document.getElementById('soundToggle'); soundToggle.textContent='[sound: ON]';
+soundToggle.addEventListener('click',(e)=>{ e.stopPropagation(); initAudioContext(); soundEnabled=!soundEnabled; soundToggle.textContent=soundEnabled?'[sound: ON]':'[sound: OFF]'; });
+function playSound(type){ if(!soundEnabled||!audioCtx) return; try{
+  switch(type){
+    case 'click':{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.setValueAtTime(800,audioCtx.currentTime); o.frequency.exponentialRampToValueAtTime(200,audioCtx.currentTime+0.08); g.gain.setValueAtTime(0.12,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.08); o.start(); o.stop(audioCtx.currentTime+0.08); break; }
+    case 'notif':{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(880,audioCtx.currentTime); o.frequency.setValueAtTime(1100,audioCtx.currentTime+0.08); o.frequency.setValueAtTime(880,audioCtx.currentTime+0.16); g.gain.setValueAtTime(0.08,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.2); o.start(); o.stop(audioCtx.currentTime+0.2); break; }
+    case 'penalty':{ const o1=audioCtx.createOscillator(),o2=audioCtx.createOscillator(),g=audioCtx.createGain(); o1.connect(g); o2.connect(g); g.connect(audioCtx.destination); o1.type='square'; o2.type='sawtooth'; o1.frequency.setValueAtTime(400,audioCtx.currentTime); o1.frequency.exponentialRampToValueAtTime(80,audioCtx.currentTime+0.3); o2.frequency.setValueAtTime(420,audioCtx.currentTime); o2.frequency.exponentialRampToValueAtTime(60,audioCtx.currentTime+0.3); g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.3); o1.start(); o2.start(); o1.stop(audioCtx.currentTime+0.3); o2.stop(audioCtx.currentTime+0.3); break; }
+    case 'glitch':{ const bSize=audioCtx.sampleRate*0.15,b=audioCtx.createBuffer(1,bSize,audioCtx.sampleRate),d=b.getChannelData(0); for(let i=0;i<bSize;i++) d[i]=(Math.random()*2-1)*0.3; const s=audioCtx.createBufferSource(),g=audioCtx.createGain(); s.buffer=b; s.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.15,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.15); s.start(); break; }
+    case 'whoosh':{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter(); o.connect(f); f.connect(g); g.connect(audioCtx.destination); o.type='sawtooth'; f.type='lowpass'; f.frequency.setValueAtTime(100,audioCtx.currentTime); f.frequency.exponentialRampToValueAtTime(3000,audioCtx.currentTime+0.3); f.frequency.exponentialRampToValueAtTime(80,audioCtx.currentTime+0.6); o.frequency.setValueAtTime(60,audioCtx.currentTime); g.gain.setValueAtTime(0.1,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.6); o.start(); o.stop(audioCtx.currentTime+0.6); break; }
+    case 'crack':{ const bSize=audioCtx.sampleRate*0.06,b=audioCtx.createBuffer(1,bSize,audioCtx.sampleRate),d=b.getChannelData(0); for(let i=0;i<bSize;i++) d[i]=(Math.random()*2-1)*Math.exp(-i/(bSize*0.1)); const s=audioCtx.createBufferSource(),g=audioCtx.createGain(); s.buffer=b; s.connect(g); g.connect(audioCtx.destination); g.gain.setValueAtTime(0.25,audioCtx.currentTime); s.start(); break; }
+    case 'scream':{ [220,233,311,466].forEach(f=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sawtooth'; o.frequency.setValueAtTime(f,audioCtx.currentTime); g.gain.setValueAtTime(0.04,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+1.2); o.start(); o.stop(audioCtx.currentTime+1.2); }); break; }
+    case 'drone':{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(55,audioCtx.currentTime); g.gain.setValueAtTime(0.03,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+3); o.start(); o.stop(audioCtx.currentTime+3); break; }
+  }
+}catch(e){} }
+function ambientSounds(){ if(soundEnabled){ playSound(pick(['click','drone','click','notif'])); } setTimeout(ambientSounds,rand(3000,10000)); } setTimeout(ambientSounds,5000);
+
+// ===== РАСШИРЕННАЯ СТАТИСТИКА =====
+let globalScrollCount = 12478392;
+let globalHours = 187400000;
+let aliveAccounts = 3245000000;
+let deadAccounts = 1812000000;
+
+function updateGlobalStats() {
+  const scrollInc = Math.floor(scrollSpeed * 200 + Math.random() * 50);
+  globalScrollCount += scrollInc;
+  document.getElementById('statsScroll').textContent = (globalScrollCount / 1000000).toFixed(1) + 'M';
+  
+  const hoursInc = Math.floor(Math.random() * 4000) + 1000;
+  globalHours += hoursInc;
+  document.getElementById('statsHours').textContent = (globalHours / 1000000).toFixed(1) + 'M';
+  
+  aliveAccounts += Math.floor((Math.random() - 0.3) * 5000);
+  aliveAccounts = Math.max(3000000000, Math.min(3500000000, aliveAccounts));
+  document.getElementById('statsAlive').textContent = (aliveAccounts / 1000000000).toFixed(2) + 'B';
+  
+  deadAccounts += Math.floor((Math.random() - 0.4) * 3000);
+  deadAccounts = Math.max(1500000000, Math.min(2200000000, deadAccounts));
+  document.getElementById('statsDead').textContent = (deadAccounts / 1000000000).toFixed(2) + 'B';
+}
+setInterval(updateGlobalStats, 1000);
+
+// ===== АССИСТЕНТ =====
+function showAssistant(){
+  const container=document.getElementById('assistantContainer'); const existing=container.querySelector('.assistant-bubble'); if(existing) existing.remove();
+  const bubble=document.createElement('div'); bubble.className='assistant-bubble';
+  bubble.innerHTML=`<div class="assistant-text">Привет, я ваш личный ассистент. Чем могу помочь?</div><button class="assistant-close">✕</button>`;
+  container.appendChild(bubble);
+  bubble.querySelector('.assistant-close').addEventListener('click',()=>bubble.remove());
+  setTimeout(()=>{ if(bubble.parentNode) bubble.remove(); },8000);
+}
+setInterval(()=>{ if(Math.random()>0.5) showAssistant(); },45000);
+
+// ===== CRACKS / BROKEN TEXT / BACKGROUND =====
+const crackOverlay=document.getElementById('crackOverlay'); let crackCount=0;
+function addCrack(){
+  if(crackCount>15) return; crackCount++; crackOverlay.classList.add('visible');
+  const cx=rand(10,90), cy=rand(10,90), numLines=rand(3,7);
+  for(let i=0;i<numLines;i++){
+    const angle=(360/numLines)*i+rand(-20,20), length=rand(80,300), line=document.createElement('div'); line.className='crack-line';
+    line.style.left=cx+'%'; line.style.top=cy+'%'; line.style.width=length+'px'; line.style.height=rand(1,2)+'px';
+    line.style.transform=`rotate(${angle}deg)`; crackOverlay.appendChild(line);
+    const numBranches=rand(1,4);
+    for(let b=0;b<numBranches;b++){
+      const branchPos=rand(20,80), branchAngle=angle+rand(-50,50), branchLen=rand(20,100), branch=document.createElement('div'); branch.className='crack-branch';
+      const bx=cx+(length*branchPos/100)*Math.cos(angle*Math.PI/180)/window.innerWidth*100, by=cy+(length*branchPos/100)*Math.sin(angle*Math.PI/180)/window.innerHeight*100;
+      branch.style.left=bx+'%'; branch.style.top=by+'%'; branch.style.width=branchLen+'px'; branch.style.height='1px';
+      branch.style.transform=`rotate(${branchAngle}deg)`; crackOverlay.appendChild(branch);
+    }
+  }
+  const numShards=rand(2,5);
+  for(let s=0;s<numShards;s++){
+    const shard=document.createElement('div'); shard.className='crack-shard'; shard.style.left=(cx+rand(-5,5))+'%'; shard.style.top=(cy+rand(-5,5))+'%';
+    const size=rand(8,30); shard.style.width=size+'px'; shard.style.height=(size*rand(60,140)/100)+'px';
+    shard.style.transform=`rotate(${rand(0,180)}deg)`; crackOverlay.appendChild(shard);
+  }
+  playSound('crack'); document.body.classList.add('shaking'); setTimeout(()=>document.body.classList.remove('shaking'),300);
+}
+function scheduleCrack(){ if(getChaosLevel()>0.4) addCrack(); setTimeout(scheduleCrack,chaosInterval(12000,60000)); } setTimeout(scheduleCrack,30000);
+function spawnBrokenText(){ if(getChaosLevel()>0.25){ const el=document.createElement('div'); el.className='broken-text'; el.textContent=pick(brokenStrings); el.style.left=rand(5,90)+'%'; el.style.top=rand(10,90)+'%'; document.body.appendChild(el); setTimeout(()=>el.remove(),8000); } setTimeout(spawnBrokenText,chaosInterval(2000,10000)); } setTimeout(spawnBrokenText,8000);
+function updateBackground(cl){
+  document.getElementById('bgGradient').style.opacity=Math.min(1,cl*2);
+  document.getElementById('bgGrid').style.opacity=cl>0.1?Math.min(0.6,(cl-0.1)*1.5):0;
+  document.getElementById('bgNoise').style.opacity=cl>0.3?Math.min(0.5,(cl-0.3)*1.2):0;
+  document.getElementById('bgVignette').style.opacity=cl>0.2?Math.min(1,(cl-0.2)*1.8):0;
+  document.getElementById('bgScanlines').style.opacity=cl>0.5?Math.min(0.4,(cl-0.5)*0.8):0;
+  const r=Math.round(10+cl*20), g=Math.round(10-cl*8), b=Math.round(10+cl*5);
+  document.body.style.backgroundColor=`rgb(${r},${Math.max(0,g)},${b})`;
+}
+
+// ===== ACHIEVEMENTS =====
+const achieveContainer=document.getElementById('achievements'), achievementsDone=new Set();
+const chaosAchievements=[
+  {id:'first_scroll',chaos:0.02,icon:'👋',title:'Добро пожаловать',body:'Вы начали скроллить. Пути назад нет.',credits:1},
+  {id:'still_here',chaos:0.08,icon:'👀',title:'Всё ещё здесь',body:'Вы одобрены. Продолжайте листать.',credits:5},
+  {id:'good_citizen',chaos:0.15,icon:'⭐',title:'Хороший гражданин',body:'Ваша лояльность к ленте отмечена системой.',credits:10},
+  {id:'deep_scroll',chaos:0.22,icon:'🏆',title:'Глубокий скроллинг',body:'Вы прошли дальше, чем 87% пользователей.',credits:25},
+  {id:'attention_donor',chaos:0.3,icon:'🩸',title:'Донор внимания',body:'Спасибо за ваше время. Оно было вкусным.',credits:50},
+  {id:'cant_stop',chaos:0.38,icon:'🔥',title:'Не могу остановиться',body:'Система фиксирует: остановка невозможна.',credits:100},
+  {id:'art_lover',chaos:0.45,icon:'🎨',title:'Ценитель искусства',body:'Вы потребили достаточно контента для диплома.',credits:200},
+  {id:'past_point',chaos:0.52,icon:'⚠️',title:'Точка невозврата',body:'Вы прошли точку невозврата. Добро пожаловать.',credits:500},
+  {id:'dopamine_master',chaos:0.6,icon:'💊',title:'Мастер дофамина',body:'Ваш мозг адаптировался. Это не комплимент.',credits:1000},
+  {id:'exemplary',chaos:0.68,icon:'👑',title:'Образцовый потребитель',body:'Корпорации гордятся вами. Серьёзно.',credits:2500},
+  {id:'time_thief',chaos:0.75,icon:'⏰',title:'Вор собственного времени',body:'Вы украли у себя целый вечер. Браво.',credits:5000},
+  {id:'digital_zombie',chaos:0.82,icon:'🧟',title:'Цифровой зомби',body:'Ваши глаза стеклянные. Но палец всё ещё двигается.',credits:10000},
+  {id:'exhibit',chaos:0.88,icon:'🖼️',title:'Вы — экспонат',body:'Поздравляем! Вы стали частью арт-инсталляции.',credits:50000},
+  {id:'final_form',chaos:0.95,icon:'💀',title:'Финальная форма',body:'Вы достигли дна. Дна не существует.',credits:999999},
+  {id:'beyond',chaos:1.0,icon:'🌀',title:'???',body:'Ошибка: пользователь не найден. Остался только скролл.',credits:0},
+];
+const creditAchievements=[
+  {id:'first_catch',minCredits:10,icon:'🎯',title:'Первый улов',body:'Вы поймали уведомление. Зависимость начинается.',credits:15},
+  {id:'collector',minCredits:100,icon:'📦',title:'Коллекционер',body:'Вы ловите уведомления как покемонов.',credits:50},
+  {id:'addict',minCredits:500,icon:'💉',title:'Зависимость подтверждена',body:'Система признаёт: вы зависимы от наград.',credits:200},
+  {id:'hoarder',minCredits:2000,icon:'💰',title:'Накопитель пустоты',body:'2000 кредитов. Их нельзя потратить. Никогда.',credits:500},
+  {id:'whale',minCredits:10000,icon:'🐋',title:'Кит',body:'Вы — крупнейший инвестор в ничто.',credits:3000},
+  {id:'oligarch',minCredits:50000,icon:'🏰',title:'Олигарх внимания',body:'Ваш капитал бессмысленности не знает границ.',credits:10000},
+  {id:'god',minCredits:500000,icon:'🌟',title:'Бог социальных кредитов',body:'Вы победили. Приз — ничто.',credits:100000},
+];
+function showAchievement(achieve){
+  if(achievementsDone.has(achieve.id)) return; achievementsDone.add(achieve.id);
+  if(achieve.credits>0) addSocialCredits(achieve.credits,window.innerWidth/2,window.innerHeight/2);
+  const el=document.createElement('div'); el.className='achievement';
+  el.innerHTML=`<div class="achieve-icon">${achieve.icon}</div><div class="achieve-title">${achieve.title}</div><div class="achieve-body">${achieve.body}</div><div class="achieve-points">+${achieve.credits>0?achieve.credits.toLocaleString():'∞'} социальных кредитов</div>`;
+  achieveContainer.appendChild(el); playSound('click');
+  setTimeout(()=>{ if(audioCtx&&soundEnabled){ try{ [523,659,784,1047].forEach((f,i)=>{ const o=audioCtx.createOscillator(),g=audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.type='sine'; o.frequency.setValueAtTime(f,audioCtx.currentTime+i*0.1); g.gain.setValueAtTime(0.08,audioCtx.currentTime+i*0.1); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+i*0.1+0.3); o.start(audioCtx.currentTime+i*0.1); o.stop(audioCtx.currentTime+i*0.1+0.3); }); }catch(e){} } },200);
+  setTimeout(()=>el.remove(),5000);
+}
+function checkAchievements(){
+  const cl=getChaosLevel();
+  for(const a of chaosAchievements) if(cl>=a.chaos&&!achievementsDone.has(a.id)){ showAchievement(a); break; }
+  for(const a of creditAchievements) if(socialCredits>=a.minCredits&&!achievementsDone.has(a.id)){ showAchievement(a); break; }
+  setTimeout(checkAchievements,500);
+}
+setTimeout(checkAchievements,1000);
+
+// ===== TIMER =====
+const TIMER_DURATION=5*60; let timerRemaining=TIMER_DURATION, timerEnded=false, timerFrozenByCredits=false;
+function showReloadMessageAndReload(){
+  const msgDiv=document.createElement('div'); msgDiv.className='reload-message';
+  msgDiv.innerHTML=`<div class="reload-message-text">ПРОБУЙТЕ СНОВА</div>`; document.body.appendChild(msgDiv);
+  playSound('scream'); setTimeout(()=>location.reload(),3000);
+}
+function updateTimer(){
+  if(timerEnded) return;
+  const timerEl=document.getElementById('timerValue'), timerSub=document.getElementById('timerSub');
+  if(socialCredits>=2000 && !timerFrozenByCredits){
+    timerFrozenByCredits=true; timerEl.textContent='STOP'; timerEl.classList.add('ended');
+    timerSub.textContent='ПОБЕДА! 2000 КРЕДИТОВ'; timerSub.style.color='#ffd700';
+    showAchievement({id:'win_credits',icon:'🏆',title:'СОЦИАЛЬНЫЙ КАПИТАЛ',body:'Вы накопили 2000 кредитов. Общество принимает вас.',credits:0});
+    playSound('scream'); document.body.classList.add('shaking'); setTimeout(()=>document.body.classList.remove('shaking'),800);
+    return;
+  }
+  timerRemaining--;
+  if(timerRemaining<=0){
+    timerRemaining=0; timerEnded=true; timerEl.textContent='0:00'; timerEl.classList.add('ended');
+    const allSorted=getLeaderboardSorted(); const pos=allSorted.findIndex(u=>u.isYou)+1;
+    if(pos<=3){
+      timerSub.textContent=`ТОП-${pos}! Но зачем?`; timerSub.style.color='#ffd700';
+      showAchievement({id:'top3',icon:'🏆',title:'ТОП-3!',body:'Вы в топе. Поздравляем. Это ничего не значит.',credits:0});
+    }else{
+      timerSub.textContent=`Место ${pos}. Вы проиграли.`; timerSub.style.color='#ff0000';
+      showAchievement({id:'loser',icon:'💩',title:'ВРЕМЯ ВЫШЛО',body:`Место ${pos}. 5 минут потрачены зря.`,credits:0});
+      setInterval(()=>spawnRejectionNotif(),800);
+    }
+    playSound('scream'); document.body.classList.add('shaking'); setTimeout(()=>document.body.classList.remove('shaking'),800);
+    showReloadMessageAndReload();
+    return;
+  }
+  const min=Math.floor(timerRemaining/60), sec=timerRemaining%60; timerEl.textContent=`${min}:${sec.toString().padStart(2,'0')}`;
+  if(timerRemaining<=60){ timerEl.classList.add('critical'); if(timerRemaining%10===0){ spawnSingleNotif('pressure'); playSound('penalty'); } }
+  const allSorted=getLeaderboardSorted(); const pos=allSorted.findIndex(u=>u.isYou)+1;
+  if(pos<=3){ timerSub.textContent=`ТОП-${pos} — удерживай!`; timerSub.style.color='#33ff66'; }
+  else{ timerSub.textContent=`Место ${pos} — нужен ТОП-3!`; timerSub.style.color='#ff4444'; }
+  setTimeout(updateTimer,1000);
+}
+setTimeout(updateTimer,1000);
+
+// ===== LEADERBOARD =====
+const leaderboardUsers=[
+  {name:'eternal_scroller',score:4200,delta:0},{name:'dopamine_queen',score:3600,delta:0},{name:'like_machine',score:2800,delta:0},
+  {name:'notification_god',score:2100,delta:0},{name:'feed_prisoner',score:1500,delta:0},{name:'click_addict',score:900,delta:0},
+  {name:'void_watcher',score:500,delta:0},{name:'silent_lurker',score:200,delta:0},{name:'pixel_zombie',score:50,delta:0},
+];
+function getLeaderboardSorted(){
+  const all=[...leaderboardUsers.map(u=>({...u,isYou:false})),{name:'ВЫ',score:socialCredits,delta:0,isYou:true}];
+  all.sort((a,b)=>b.score-a.score); return all;
+}
+function updateLeaderboard(){
+  leaderboardUsers.forEach(u=>{
+    const elapsed=TIMER_DURATION-timerRemaining, growthRate=30+elapsed*0.3, change=rand(Math.round(-growthRate*0.3),Math.round(growthRate));
+    u.delta=change; u.score=Math.max(0,u.score+change);
+  });
+  const allUsers=getLeaderboardSorted(), container=document.getElementById('lbRows');
+  container.innerHTML=allUsers.slice(0,10).map((u,i)=>{
+    const deltaClass=u.isYou?'':(u.delta>0?'up':u.delta<0?'down':''), deltaText=u.isYou?'':(u.delta>0?`+${u.delta}`:`${u.delta}`), isTop3=i<3, rankColor=u.isYou?'':(isTop3?'style="color:#ffd700"':'');
+    return `<div class="lb-row ${u.isYou?'lb-you':''}" ${rankColor}><span class="lb-rank">${i+1}.</span><span class="lb-name">${u.isYou?'▶ ВЫ':'@'+u.name}</span><span class="lb-score">${u.score.toLocaleString()}</span><span class="lb-delta ${deltaClass}">${deltaText}</span></div>`;
+  }).join('');
+  setTimeout(updateLeaderboard,rand(2000,4000));
+}
+setTimeout(updateLeaderboard,1500);
+
+// ===== РЕКЛАМНЫЕ ПЛАШКИ ПОД СТАТИСТИКОЙ =====
+const adStack = document.getElementById('adStack');
+const AD_COUNT = 3;
+
+function buildAdStack() {
+  adStack.innerHTML = '';
+  for (let i = 0; i < AD_COUNT; i++) {
+    const item = document.createElement('div');
+    item.className = 'ad-item';
+    item.innerHTML = `
+      <div class="ad-title">🚀 СПЕЦПРЕДЛОЖЕНИЕ</div>
+      <div class="ad-content">${pick(belowAds)}</div>
+    `;
+    adStack.appendChild(item);
+  }
+}
+
+function rotateAds() {
+  buildAdStack();
+  setTimeout(rotateAds, rand(4000, 8000));
+}
+rotateAds();
+
+// ===== ЗНАКОМСТВА =====
+function showDatingPopup() {
+  const container = document.getElementById('datingContainer');
+  const profile = pick(datingProfiles);
+  const bubble = document.createElement('div');
+  bubble.className = 'dating-bubble';
+  const initial = profile.name.charAt(0);
+  bubble.innerHTML = `
+    <div class="dating-avatar">${initial}</div>
+    <div class="dating-info">
+      <div class="dating-name">${profile.name}</div>
+      <div class="dating-detail">${profile.text}</div>
+      <div class="dating-distance">📍 ${profile.distance} от вас</div>
+    </div>
+    <button class="dating-close">✕</button>
+  `;
+  container.appendChild(bubble);
+  bubble.querySelector('.dating-close').addEventListener('click', () => bubble.remove());
+  setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 7000);
+  setTimeout(showDatingPopup, rand(10000, 20000));
+}
+setTimeout(showDatingPopup, 8000);
+
+// ===== МЕХАНИКА "СТАВЬ ЛАЙК" (ускорено, штраф -10) =====
+let heartLevel = 100;
+const heartFill = document.getElementById('heartBarFill');
+const heartLabel = document.getElementById('heartLabel');
+const heartButton = document.getElementById('heartButton');
+const heartPenaltyContainer = document.getElementById('heartPenaltyContainer');
+
+heartButton.addEventListener('click', (e) => {
+  e.stopPropagation();
+  heartLevel = Math.min(100, heartLevel + 12);
+  updateHeartUI();
+  playSound('click');
+  heartButton.style.transform = 'scale(1.3)';
+  setTimeout(() => heartButton.style.transform = '', 100);
+  
+  // Всплывающее сердечко над кнопкой
+  const popup = document.createElement('div');
+  popup.className = 'heart-penalty-popup';
+  popup.textContent = '❤️';
+  popup.style.color = '#ff6699';
+  popup.style.textShadow = '0 0 8px #ff3366';
+  heartPenaltyContainer.appendChild(popup);
+  setTimeout(() => popup.remove(), 1000);
+});
+
+function updateHeartUI() {
+  const percent = Math.max(0, heartLevel);
+  heartFill.style.width = percent + '%';
+  
+  if (heartLevel <= 0) {
+    heartLabel.innerHTML = '⚠️ КРИТИЧЕСКИЙ УРОВЕНЬ ⚠️';
+    heartLabel.classList.add('heart-warning');
+  } else if (heartLevel < 30) {
+    heartLabel.innerHTML = '⚠️ НИЗКИЙ УРОВЕНЬ';
+    heartLabel.classList.add('heart-warning');
+  } else {
+    heartLabel.innerHTML = '(ставь лайк)';
+    heartLabel.classList.remove('heart-warning');
+  }
+  
+  if (heartLevel < 20) {
+    heartFill.style.background = 'linear-gradient(90deg, #ff0000, #ff4444)';
+  } else if (heartLevel < 50) {
+    heartFill.style.background = 'linear-gradient(90deg, #ff6600, #ffaa00)';
+  } else {
+    heartFill.style.background = 'linear-gradient(90deg, #ff3366, #ff6699)';
+  }
+}
+
+// Ускоренное уменьшение: 5 единиц в секунду (каждые 200 мс по 1)
+setInterval(() => {
+  if (!timerEnded) {
+    heartLevel = Math.max(0, heartLevel - 1);
+    updateHeartUI();
+  }
+}, 200);
+
+// Штраф -10 социальных кредитов при опустошении
+setInterval(() => {
+  if (heartLevel <= 0 && socialCredits > 0 && !timerEnded) {
+    const penalty = 10;
+    socialCredits = Math.max(0, socialCredits - penalty);
+    document.getElementById('creditValue').textContent = socialCredits.toLocaleString();
+    
+    // Всплывающее уведомление о штрафе НАД СЕРДЕЧКОМ
+    const popup = document.createElement('div');
+    popup.className = 'heart-penalty-popup';
+    popup.textContent = `-${penalty}`;
+    heartPenaltyContainer.appendChild(popup);
+    setTimeout(() => popup.remove(), 1000);
+    
+    playSound('penalty');
+  }
+}, 2000);
+
+updateHeartUI();
+
+// ===== НОВАЯ ФУНКЦИЯ: "ПРИСОЕДИНИЛСЯ К СЕТИ" =====
+function addJoinNotification() {
+  const joinFeed = document.getElementById('join-feed');
+  const user = pick(usernames);
+  const notification = document.createElement('div');
+  notification.className = 'join-notification';
+  notification.textContent = `@${user} присоединился к сети`;
+  joinFeed.appendChild(notification);
+  
+  setTimeout(() => notification.remove(), 3000);
+  setTimeout(addJoinNotification, rand(2000, 4000));
+}
+setTimeout(addJoinNotification, 5000);
+
+// ===== КУРС ВАЛЮТ И ПОГОДА =====
+function updateCurrencyAndWeather() {
+  const usd = (95 + Math.random() * 5).toFixed(2);
+  const eur = (102 + Math.random() * 6).toFixed(2);
+  document.getElementById('currencyRates').innerHTML = `💵 ${usd} ₽  |  € ${eur} ₽`;
+  
+  const temps = ['+21°C', '+22°C', '+23°C', '+24°C', '+20°C', '+25°C'];
+  const icons = ['☀️', '🌤️', '⛅', '☁️'];
+  const weather = pick(icons) + ' ' + pick(temps) + ' Москва';
+  document.getElementById('weatherWidget').textContent = weather;
+}
+setInterval(updateCurrencyAndWeather, 10000);
+updateCurrencyAndWeather();
+
+// ===== ПОЗИТИВНЫЕ НОВОСТИ (в верхней плашке справа от погоды) =====
+function rotateGoodNews() {
+  document.getElementById('goodNews').textContent = pick(goodNewsList);
+  setTimeout(rotateGoodNews, 6000);
+}
+rotateGoodNews();
+
+</script>
+</body>
+</html>
